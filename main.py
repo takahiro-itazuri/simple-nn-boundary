@@ -38,17 +38,17 @@ if __name__ == '__main__':
 	tensors, labels, dataset = generate_dataset(means, std, nsamples)
 
 	nc = len(means)
-	nl = 10
+	nl = 5
 	nh = 10
-	lr = 0.01
+	lr = 0.1
 	momentum = 0.9
 	model = Model(nc, nh, nl, activation='softplus', use_bn=True, beta=100.).to(device)
 	optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
 	criterion = nn.CrossEntropyLoss()
 
-	nepochs = 1000
+	nepochs = 100
 	checkpoint = 10
-	batch_size = 10000
+	batch_size = 1000000
 	loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 	for epoch in range(1, nepochs+1):
 		total = 0
@@ -69,7 +69,7 @@ if __name__ == '__main__':
 			print('[{:d}] acc: {:.4f}, loss: {:.2e}'.format(epoch, float(correct)/float(total), loss.item()/float(total)))
 
 	model.eval()
-	grid_size = 10000
+	grid_size = 2000
 	x = np.linspace(-2.0, 2.0, grid_size)
 	y = np.linspace(-2.0, 2.0, grid_size)
 	xx, yy = np.meshgrid(x, y)
@@ -82,28 +82,22 @@ if __name__ == '__main__':
 		results.append(o)
 	results = torch.cat(results).numpy()
 	results = np.reshape(results, (grid_size, grid_size))
-	cmap = plt.get_cmap('tab10')
-	r = np.zeros((grid_size, grid_size, 4))
-	for i in range(grid_size):
-		for j in range(grid_size):
-			c = list(cmap(results[i][j]))
-			c[3] = 0.5
-			r[i][j] = c
-	plt.figure(figsize=(10,10))
-	plt.imshow(r, origin='lower')
+	plt.figure(figsize=(100,100))
+	plt.pcolormesh(xx, yy, results, cmap='tab20', vmin=-0.5, vmax=9.5)
 
+	cmap = plt.get_cmap('tab10')
 	numpys = tensors.numpy()
-	numpys = numpys * (grid_size / 4) + (grid_size / 2)
 	for i in range(len(means)):
-		plt.scatter(numpys[i*nsamples:(i+1)*nsamples, 0], numpys[i*nsamples:(i+1)*nsamples, 1], s=2, c=cmap(i))
+		plt.scatter(numpys[i*nsamples:(i+1)*nsamples, 0], numpys[i*nsamples:(i+1)*nsamples, 1], s=500, c=cmap(i))
+	
 	plt.xticks(color="None")
 	plt.yticks(color="None")
-	plt.xlim(0, grid_size)
-	plt.ylim(0, grid_size)
+	plt.xlim(-2.0, 2.0)
+	plt.ylim(-2.0, 2.0)
 	plt.gca().spines['top'].set_visible(False)
 	plt.gca().spines['bottom'].set_visible(False)
 	plt.gca().spines['right'].set_visible(False)
 	plt.gca().spines['left'].set_visible(False)
 	plt.tick_params(length=0)
 	plt.subplots_adjust(left=0, bottom=0, right=1, top=1)
-	plt.show()
+	plt.savefig('boundary.png')
